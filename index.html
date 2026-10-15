@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cuentas">
+<meta name="theme-color" content="#EEF1F4">
+<title>Cuentas Claras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: una columna tipo app de bolsillo — saldo arriba, carga rápida, mes, movimientos, ajustes */
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --ink:#18202B; --muted:#5D6877; --line:#D9DEE5;
+  --p0:#4A55C9; --p0-soft:#E3E5FA; --p1:#C9602E; --p1-soft:#F9E5DA;
+  --ok:#2E7D57; --danger:#B3362E; --chip:#E6EAEF;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161D; --surface:#1A212B; --ink:#E8ECF1; --muted:#97A2B0; --line:#2B3440;
+  --p0:#8E97F2; --p0-soft:#272D55; --p1:#F09A6C; --p1-soft:#4A2C1E;
+  --ok:#5CC08E; --danger:#F07A70; --chip:#242D38; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161D; --surface:#1A212B; --ink:#E8ECF1; --muted:#97A2B0; --line:#2B3440;
+  --p0:#8E97F2; --p0-soft:#272D55; --p1:#F09A6C; --p1-soft:#4A2C1E;
+  --ok:#5CC08E; --danger:#F07A70; --chip:#242D38; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1,h2{font-family:var(--display);margin:0;text-wrap:balance}
+h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--p0);outline-offset:2px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.who{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.card{background:var(--surface);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.label{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:0;background:var(--chip);padding:8px 12px;border-radius:999px;font-weight:500;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.seg button.p0[aria-pressed="true"]{background:var(--p0);color:#fff}
+.seg button.p1[aria-pressed="true"]{background:var(--p1);color:#fff}
+.seg.small button{padding:5px 10px;font-size:13px}
+
+/* saldo */
+.bal-head{font-family:var(--display);font-size:20px;font-weight:500;line-height:1.25}
+.bal-amt{font-family:var(--display);font-size:42px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.tug{position:relative;height:10px;border-radius:99px;background:var(--chip);overflow:hidden}
+.tug i{position:absolute;top:0;bottom:0;border-radius:99px}
+.tug::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--muted);opacity:.5}
+.tug-names{display:flex;justify-content:space-between;font-size:13px;font-weight:600}
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600;background:var(--ink);color:var(--surface)}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.btn.danger{background:var(--danger);color:#fff}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > .grow{flex:1 1 140px;min-width:0}
+
+/* form */
+.amount{display:flex;align-items:baseline;gap:6px;border-bottom:2px solid var(--line);padding-bottom:4px}
+.amount span{font-family:var(--display);font-size:28px;color:var(--muted)}
+.amount input{border:0;background:transparent;font-family:var(--display);font-size:36px;font-weight:700;width:100%;min-width:0;padding:0}
+.amount input:focus{outline:none}
+.amount:focus-within{border-color:var(--p0)}
+.field{border:1px solid var(--line);background:transparent;border-radius:12px;padding:10px 12px;width:100%;min-width:0}
+.field:focus{outline:none;border-color:var(--p0)}
+.hint{font-size:13px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--p0)}
+
+/* mes */
+.month-nav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.month-nav button{border:0;background:var(--chip);width:38px;height:38px;border-radius:50%;font-size:18px}
+.month-nav h2{text-transform:capitalize}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat .v{font-family:var(--display);font-size:20px;font-weight:700}
+.stat .k{font-size:12px;color:var(--muted)}
+.cats{display:flex;flex-direction:column;gap:8px}
+.cat{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;font-size:14px}
+.cat .bar{height:8px;border-radius:99px;background:var(--chip);overflow:hidden}
+.cat .bar i{display:block;height:100%;background:var(--ink);opacity:.75;border-radius:99px}
+
+/* lista */
+.day{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-top:6px}
+.item{display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;width:100%}
+.item:first-of-type{border-top:0}
+.item .dot{width:8px;height:36px;border-radius:4px}
+.item .t{font-weight:600;overflow-wrap:anywhere}
+.item .s{font-size:13px;color:var(--muted)}
+.item .m{text-align:right}
+.item .m b{display:block;font-size:15px}
+.item .m small{font-size:12px;color:var(--muted)}
+.item.pago .t{color:var(--ok)}
+.empty{color:var(--muted);text-align:center;padding:18px 8px}
+details summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{margin-bottom:12px}
+.banner{background:var(--p1-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:13px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;z-index:20;max-width:calc(100% - 32px)}
+@media (max-width:420px){.bal-amt{font-size:36px}.cat{grid-template-columns:90px 1fr auto}.stats{grid-template-columns:1fr 1fr}.stats .stat:first-child{grid-column:1/-1}}
+@media (prefers-reduced-motion:no-preference){.tug i{transition:all .35s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Cuentas Claras</h1>
+    <div class="who" id="whoBox" hidden><span>Soy</span><div class="seg small" id="whoSeg"></div></div>
+  </header>
+
+  <div class="banner" id="offline" hidden>Modo local: los gastos se guardan solo en este celular. Para compartirlos con tu pareja, completá la configuración de Firebase en el código.</div>
+
+  <section class="card" id="codeCard" hidden>
+    <h2>Código de pareja</h2>
+    <p class="hint" style="margin:0">Es la llave que conecta sus dos celulares. Generá uno nuevo, entrá, y pasáselo a tu pareja para que ponga el mismo. Cualquiera que lo tenga ve los gastos, así que no lo publiques.</p>
+    <input class="field" id="codeIn" placeholder="Pegá el código acá" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="row"><button class="btn grow" id="codeGo">Entrar</button><button class="btn ghost" id="codeGen">Generar uno nuevo</button></div>
+  </section>
+
+  <!-- setup -->
+  <section class="card" id="setup" hidden>
+    <h2>Primero, ¿quiénes son?</h2>
+    <p class="hint" style="margin:0">Los nombres aparecen en los botones y en el saldo. Después los podés cambiar en Ajustes.</p>
+    <div class="row">
+      <input class="field grow" id="n0" placeholder="Tu nombre" value="Guille" autocomplete="off">
+      <input class="field grow" id="n1" placeholder="Nombre de tu pareja" autocomplete="off">
+    </div>
+    <button class="btn" id="setupGo">Empezar</button>
+  </section>
+
+  <main id="app" hidden style="display:contents">
+    <!-- saldo -->
+    <section class="card" aria-live="polite">
+      <div class="label">Saldo pendiente</div>
+      <div class="bal-head" id="balHead">—</div>
+      <div class="bal-amt num" id="balAmt"></div>
+      <div>
+        <div class="tug"><i id="tugBar"></i></div>
+        <div class="tug-names" style="margin-top:6px"><span id="tn0" style="color:var(--p0)"></span><span id="tn1" style="color:var(--p1)"></span></div>
+      </div>
+      <button class="btn" id="settleBtn">Saldar cuentas</button>
+      <div id="settleBox" hidden style="display:flex;flex-direction:column;gap:10px">
+        <div class="hint" id="settleTxt"></div>
+        <div class="row">
+          <div class="amount grow"><span>$</span><input id="settleAmt" inputmode="decimal" aria-label="Monto a saldar"></div>
+        </div>
+        <div class="row"><button class="btn grow" id="settleOk">Registrar pago</button><button class="btn ghost" id="settleNo">Cancelar</button></div>
+      </div>
+    </section>
+
+    <!-- carga -->
+    <section class="card" id="formCard">
+      <div class="top"><h2 id="formTitle">Anotar un gasto</h2><button class="btn ghost" id="cancelEdit" hidden style="padding:6px 12px">Cancelar</button></div>
+      <div class="amount"><span>$</span><input id="fMonto" inputmode="decimal" placeholder="0" aria-label="Monto" autocomplete="off"></div>
+      <input class="field" id="fDesc" placeholder="¿En qué? (súper, nafta, alquiler…)" autocomplete="off" maxlength="80">
+      <div><div class="label" style="margin-bottom:6px">Pagó</div><div class="seg" id="fPaga"></div></div>
+      <div><div class="label" style="margin-bottom:6px">Cómo se divide</div><div class="seg" id="fSplit"></div>
+        <div id="customBox" hidden style="margin-top:10px">
+          <input type="range" id="fPct" min="0" max="100" step="5" aria-label="Porcentaje">
+          <div class="hint num" id="pctTxt"></div>
+        </div>
+      </div>
+      <div><div class="label" style="margin-bottom:6px">Categoría</div><div class="seg small" id="fCat"></div></div>
+      <div class="row"><label class="label" for="fFecha">Fecha</label><input type="date" class="field grow" id="fFecha"></div>
+      <div class="row"><button class="btn grow" id="saveBtn">Agregar</button><button class="btn danger" id="delBtn" hidden>Borrar</button></div>
+    </section>
+
+    <!-- mes -->
+    <section class="card">
+      <div class="month-nav"><button id="mPrev" aria-label="Mes anterior">‹</button><h2 id="mTitle"></h2><button id="mNext" aria-label="Mes siguiente">›</button></div>
+      <div class="stats" id="stats"></div>
+      <div class="hint" id="monthNet"></div>
+      <div class="cats" id="cats"></div>
+    </section>
+
+    <!-- movimientos -->
+    <section class="card">
+      <h2>Movimientos del mes</h2>
+      <div id="list"></div>
+    </section>
+
+    <!-- ajustes -->
+    <section class="card">
+      <details id="settings">
+        <summary><span>Ajustes</span><span class="hint">Nombres y división</span></summary>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="row"><input class="field grow" id="s0" aria-label="Nombre 1"><input class="field grow" id="s1" aria-label="Nombre 2"></div>
+          <div>
+            <div class="label" style="margin-bottom:6px">División personalizada por defecto</div>
+            <input type="range" id="sPct" min="0" max="100" step="5" aria-label="División por defecto">
+            <div class="hint num" id="sPctTxt"></div>
+            <div class="hint">Sirve si quieren repartir según lo que gana cada uno (por ejemplo 60/40).</div>
+          </div>
+          <button class="btn" id="sSave">Guardar ajustes</button>
+          <div id="codeInfo" hidden style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px">
+            <div class="label">Código de pareja</div>
+            <div class="row"><input class="field grow num" id="codeShow" readonly><button class="btn ghost" id="codeCopy">Copiar</button></div>
+            <button class="btn ghost" id="codeOut">Usar otro código</button>
+          </div>
+        </div>
+      </details>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<!-- ============================================================
+     CONFIGURACIÓN DE FIREBASE (para compartir entre dos celulares)
+     Pegá acá el objeto firebaseConfig de tu proyecto.
+     Si lo dejás vacío, la app funciona igual pero guarda solo en el celular.
+     ============================================================ -->
+<script>
+window.FIREBASE_CONFIG = {
+  // apiKey: "...",
+  // authDomain: "...",
+  // projectId: "...",
+  // storageBucket: "...",
+  // messagingSenderId: "...",
+  // appId: "..."
+};
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+const CATS=[["super","Súper"],["comida","Comida afuera"],["casa","Casa"],["servicios","Servicios"],["transporte","Transporte"],["salidas","Salidas"],["salud","Farmacia"],["regalos","Regalos"],["otros","Otros"]];
+const CATNAME=Object.fromEntries(CATS);
+const fmt=n=>"$"+Math.round(n).toLocaleString("es-AR");
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const $=id=>document.getElementById(id);
+const parseMonto=s=>{s=String(s||"").trim().replace(/\$/g,"").replace(/\s/g,"");if(!s)return NaN;
+  // formato AR: 12.500,50 -> 12500.50 ; también acepta 12500.5
+  if(s.includes(",")){s=s.replace(/\./g,"").replace(",",".")}else if(/^\d{1,3}(\.\d{3})+$/.test(s)){s=s.replace(/\./g,"")}
+  return Number(s)};
+
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+let db=null, cfg=null, movs=[], me=LS.get("cc_me",0);
+let month=today().slice(0,7);
+let form=null; // estado del formulario
+let editing=null, delArmed=false;
+
+function toast(t){const el=$("toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
+const names=()=>cfg?cfg.nombres:["Vos","Tu pareja"];
+
+/* ---------- almacenamiento: Firebase o este celular ---------- */
+const useFB=!!(window.FIREBASE_CONFIG&&FIREBASE_CONFIG.apiKey&&window.firebase);
+let root=null; // parejas/<código>
+const local={cfg:LS.get("cc_cfg",null),movs:LS.get("cc_movs",{})};
+const saveLocal=()=>{LS.set("cc_movs",local.movs);onMovs(Object.values(local.movs))};
+const store={
+  async saveCfg(c){ if(root) await root.collection("config").doc("main").set(c); else {local.cfg=c;LS.set("cc_cfg",c);onCfg(c)} },
+  async saveMov(id,data){ if(root) await root.collection("movs").doc(id).set(data); else {local.movs[id]={...data,id};saveLocal()} },
+  async delMov(id){ if(root) await root.collection("movs").doc(id).delete(); else {delete local.movs[id];saveLocal()} },
+  newId(){ return root? root.collection("movs").doc().id : "m"+Date.now()+Math.random().toString(36).slice(2,6) }
+};
+function writeErr(e){
+  if(e&&e.code==="permission-denied") toast("Firebase rechazó el guardado. Revisá las reglas.");
+  else toast("No se pudo guardar. Probá de nuevo.");
+}
+
+/* ---------- saldo ---------- */
+function effect(m){ // cuánto queda a favor de la persona 0
+  if(m.tipo==="pago") return m.de===0? m.monto : -m.monto;
+  return (m.paga===0? m.monto:0) - m.monto*m.parte0;
+}
+function renderBalance(){
+  const [a,b]=names();
+  const net=movs.reduce((s,m)=>s+effect(m),0);
+  const abs=Math.abs(net);
+  $("tn0").textContent=a; $("tn1").textContent=b;
+  const bar=$("tugBar");
+  if(abs<1){
+    $("balHead").textContent="Están a mano"; $("balAmt").textContent=fmt(0);
+    $("balAmt").style.color="var(--ok)"; bar.style.width="0"; $("settleBtn").disabled=true;
+  }else{
+    const deudor=net>0?b:a, acreedor=net>0?a:b;
+    $("balHead").innerHTML="";
+    const s1=document.createElement("span");s1.textContent=deudor;s1.style.color=net>0?"var(--p1)":"var(--p0)";s1.style.fontWeight=700;
+    const s2=document.createElement("span");s2.textContent=acreedor;s2.style.color=net>0?"var(--p0)":"var(--p1)";s2.style.fontWeight=700;
+    $("balHead").append(s1," le debe a ",s2);
+    $("balAmt").textContent=fmt(abs); $("balAmt").style.color="var(--ink)";
+    // barra: hacia el lado de quien tiene a favor
+    const tot=movs.filter(m=>m.tipo!=="pago").reduce((s,m)=>s+m.monto,0)||1;
+    const w=Math.min(50,Math.max(4,abs/tot*100));
+    bar.style.width=w+"%"; bar.style.background=net>0?"var(--p0)":"var(--p1)";
+    bar.style.left=net>0?(50-w)+"%":"50%";
+    $("settleBtn").disabled=false;
+  }
+  renderBalance.net=net;
+}
+
+/* ---------- formulario ---------- */
+function resetForm(){
+  editing=null; delArmed=false; $("saveBtn").hidden=false;
+  form={paga:me,split:"mitad",pct:Math.round((cfg?.splitDef??0.5)*100),cat:"super"};
+  $("fMonto").value="";$("fDesc").value="";$("fFecha").value=today();
+  $("formTitle").textContent="Anotar un gasto";$("saveBtn").textContent="Agregar";
+  $("cancelEdit").hidden=true;$("delBtn").hidden=true;$("delBtn").textContent="Borrar";
+  renderForm();
+}
+function segBtn(label,pressed,cls,on){const b=document.createElement("button");b.type="button";b.textContent=label;b.setAttribute("aria-pressed",pressed);if(cls)b.className=cls;b.onclick=on;return b}
+function renderForm(){
+  const [a,b]=names(); const nm=[a,b]; const otro=1-form.paga;
+  $("fPaga").replaceChildren(...[0,1].map(i=>segBtn(nm[i],form.paga===i,"p"+i,()=>{form.paga=i;renderForm()})));
+  const opts=[["mitad","50 / 50"],["otro","Todo de "+nm[otro]],["custom","Otro reparto"]];
+  $("fSplit").replaceChildren(...opts.map(([k,l])=>segBtn(l,form.split===k,"",()=>{form.split=k;renderForm()})));
+  $("customBox").hidden=form.split!=="custom";
+  $("fPct").value=form.pct;
+  $("pctTxt").textContent=`${nm[0]} ${form.pct}% · ${nm[1]} ${100-form.pct}%`;
+  $("fCat").replaceChildren(...CATS.map(([k,l])=>segBtn(l,form.cat===k,"",()=>{form.cat=k;renderForm()})));
+  const hintTxt = form.split==="otro" ? `${nm[otro]} le debe todo a ${nm[form.paga]}` : "";
+  $("fSplit").title=hintTxt;
+}
+$("fPct").oninput=e=>{form.pct=+e.target.value;renderForm()};
+function parte0(){ if(form.split==="mitad")return .5; if(form.split==="otro")return form.paga===0?0:1; return form.pct/100 }
+
+$("saveBtn").onclick=async()=>{
+  const monto=parseMonto($("fMonto").value);
+  if(!(monto>0)){toast("Poné un monto mayor a cero");$("fMonto").focus();return}
+  const desc=$("fDesc").value.trim()||CATNAME[form.cat];
+  const data={tipo:"gasto",monto:Math.round(monto*100)/100,desc,cat:form.cat,fecha:$("fFecha").value||today(),paga:form.paga,parte0:parte0(),split:form.split,creado:editing?.creado||Date.now()};
+  const id=editing?editing.id:store.newId();
+  const wasEdit=!!editing;
+  $("saveBtn").disabled=true;
+  try{await store.saveMov(id,data);toast(wasEdit?"Cambios guardados":"Gasto anotado");month=data.fecha.slice(0,7);resetForm();renderMonth()}
+  catch(e){writeErr(e)} finally{$("saveBtn").disabled=false}
+};
+$("fMonto").addEventListener("keydown",e=>{if(e.key==="Enter")$("fDesc").focus()});
+$("fDesc").addEventListener("keydown",e=>{if(e.key==="Enter")$("saveBtn").click()});
+$("cancelEdit").onclick=resetForm;
+$("delBtn").onclick=async()=>{
+  if(!editing)return;
+  if(!delArmed){delArmed=true;$("delBtn").textContent="¿Seguro? Borrar";return}
+  try{await store.delMov(editing.id);toast("Borrado");resetForm()}catch(e){writeErr(e)}
+};
+function startEdit(m){
+  if(m.tipo==="pago"){ // pagos: solo borrar
+    editing=m; delArmed=false;
+    $("formTitle").textContent="Pago registrado";$("cancelEdit").hidden=false;$("delBtn").hidden=false;$("delBtn").textContent="Borrar este pago";
+    $("saveBtn").hidden=true; $("formCard").scrollIntoView({behavior:"smooth",block:"start"}); return;
+  }
+  $("saveBtn").hidden=false;
+  editing=m; delArmed=false;
+  form={paga:m.paga,split:m.split||(m.parte0===.5?"mitad":"custom"),pct:Math.round(m.parte0*100),cat:m.cat||"otros"};
+  $("fMonto").value=String(m.monto).replace(".",",");$("fDesc").value=m.desc||"";$("fFecha").value=m.fecha;
+  $("formTitle").textContent="Editar gasto";$("saveBtn").textContent="Guardar cambios";
+  $("cancelEdit").hidden=false;$("delBtn").hidden=false;$("delBtn").textContent="Borrar";
+  renderForm();$("formCard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ---------- saldar ---------- */
+$("settleBtn").onclick=()=>{
+  const net=renderBalance.net, [a,b]=names();
+  const de=net>0?1:0;
+  $("settleTxt").textContent=`${names()[de]} le paga a ${names()[1-de]}. Podés cambiar el monto si es un pago parcial.`;
+  $("settleAmt").value=Math.round(Math.abs(net)).toLocaleString("es-AR");
+  $("settleBox").hidden=false;$("settleBtn").hidden=true;$("settleAmt").focus();
+};
+$("settleNo").onclick=()=>{$("settleBox").hidden=true;$("settleBtn").hidden=false};
+$("settleOk").onclick=async()=>{
+  const net=renderBalance.net, monto=parseMonto($("settleAmt").value);
+  if(!(monto>0)){toast("Poné un monto válido");return}
+  const de=net>0?1:0;
+  try{await store.saveMov(store.newId(),{tipo:"pago",monto,de,fecha:today(),desc:"Pago",creado:Date.now()});
+    toast("Pago registrado");$("settleNo").click();month=today().slice(0,7);renderMonth()}catch(e){writeErr(e)}
+};
+
+/* ---------- mes ---------- */
+function monthLabel(ym){const [y,m]=ym.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("es-AR",{month:"long",year:"numeric"})}
+function shiftMonth(d){const [y,m]=month.split("-").map(Number);const dt=new Date(y,m-1+d,1);month=dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0");renderMonth()}
+$("mPrev").onclick=()=>shiftMonth(-1);$("mNext").onclick=()=>shiftMonth(1);
+
+function renderMonth(){
+  const [a,b]=names();
+  $("mTitle").textContent=monthLabel(month);
+  const ms=movs.filter(m=>m.fecha&&m.fecha.startsWith(month));
+  const gastos=ms.filter(m=>m.tipo!=="pago");
+  const total=gastos.reduce((s,m)=>s+m.monto,0);
+  const puso0=gastos.filter(m=>m.paga===0).reduce((s,m)=>s+m.monto,0);
+  const stat=(v,k,c)=>{const d=document.createElement("div");d.className="stat";d.innerHTML=`<div class="v num"></div><div class="k"></div>`;d.firstChild.textContent=fmt(v);d.lastChild.textContent=k;if(c)d.firstChild.style.color=c;return d};
+  $("stats").replaceChildren(stat(total,"Gastaron en total"),stat(puso0,"Puso "+a,"var(--p0)"),stat(total-puso0,"Puso "+b,"var(--p1)"));
+  const netM=gastos.reduce((s,m)=>s+effect(m),0);
+  $("monthNet").textContent=!gastos.length?"":Math.abs(netM)<1?"Con los gastos de este mes quedaron parejos.":`Solo con los gastos de este mes, ${netM>0?b:a} quedó debiendo ${fmt(Math.abs(netM))}.`;
+  // categorías
+  const byCat={};gastos.forEach(m=>byCat[m.cat||"otros"]=(byCat[m.cat||"otros"]||0)+m.monto);
+  const rows=Object.entries(byCat).sort((x,y)=>y[1]-x[1]);const max=rows[0]?.[1]||1;
+  $("cats").replaceChildren(...rows.map(([k,v])=>{const r=document.createElement("div");r.className="cat";
+    r.innerHTML=`<span></span><div class="bar"><i></i></div><span class="num"></span>`;
+    r.children[0].textContent=CATNAME[k]||"Otros";r.querySelector("i").style.width=(v/max*100)+"%";r.children[2].textContent=fmt(v);return r}));
+  // lista
+  const list=$("list");list.replaceChildren();
+  if(!ms.length){const e=document.createElement("div");e.className="empty";e.textContent="Todavía no hay gastos este mes. Anotá el primero arriba.";list.append(e);return}
+  const sorted=[...ms].sort((x,y)=>y.fecha.localeCompare(x.fecha)||(y.creado||0)-(x.creado||0));
+  let lastDay="";
+  for(const m of sorted){
+    if(m.fecha!==lastDay){lastDay=m.fecha;const d=document.createElement("div");d.className="day";
+      const [y,mo,da]=m.fecha.split("-").map(Number);d.textContent=new Date(y,mo-1,da).toLocaleDateString("es-AR",{weekday:"long",day:"numeric"});list.append(d)}
+    const it=document.createElement("button");it.type="button";it.className="item"+(m.tipo==="pago"?" pago":"");
+    it.innerHTML=`<span class="dot"></span><span style="min-width:0"><div class="t"></div><div class="s"></div></span><span class="m num"><b></b><small></small></span>`;
+    const nm=[a,b];
+    if(m.tipo==="pago"){
+      it.querySelector(".dot").style.background="var(--ok)";
+      it.querySelector(".t").textContent=`${nm[m.de]} le pagó a ${nm[1-m.de]}`;
+      it.querySelector(".s").textContent="Saldo de cuentas";
+      it.querySelector("b").textContent=fmt(m.monto);
+    }else{
+      it.querySelector(".dot").style.background=m.paga===0?"var(--p0)":"var(--p1)";
+      it.querySelector(".t").textContent=m.desc;
+      const rep=m.parte0===.5?"50/50":(m.parte0===0||m.parte0===1)?`todo de ${nm[m.parte0===1?0:1]}`:`${Math.round(m.parte0*100)}/${Math.round((1-m.parte0)*100)}`;
+      it.querySelector(".s").textContent=`Pagó ${nm[m.paga]} · ${rep} · ${CATNAME[m.cat]||"Otros"}`;
+      it.querySelector("b").textContent=fmt(m.monto);
+      const debe=m.paga===0?m.monto*(1-m.parte0):m.monto*m.parte0;
+      it.querySelector("small").textContent=debe>0?`${nm[1-m.paga]} debe ${fmt(debe)}`:"";
+    }
+    it.onclick=()=>startEdit(m);
+    list.append(it);
+  }
+}
+
+/* ---------- ajustes / identidad ---------- */
+function renderWho(){
+  const nm=names();$("whoBox").hidden=!cfg;
+  $("whoSeg").replaceChildren(...[0,1].map(i=>segBtn(nm[i],me===i,"p"+i,()=>{me=i;LS.set("cc_me",i);if(!editing){form.paga=i;renderForm()}renderWho()})));
+}
+function fillSettings(){const nm=names();$("s0").value=nm[0];$("s1").value=nm[1];$("sPct").value=Math.round((cfg?.splitDef??.5)*100);sPctTxt()}
+function sPctTxt(){const v=+$("sPct").value;$("sPctTxt").textContent=`${$("s0").value||"1"} ${v}% · ${$("s1").value||"2"} ${100-v}%`}
+$("sPct").oninput=sPctTxt;$("s0").oninput=sPctTxt;$("s1").oninput=sPctTxt;
+$("sSave").onclick=async()=>{
+  const n0=$("s0").value.trim(),n1=$("s1").value.trim();if(!n0||!n1){toast("Completá los dos nombres");return}
+  try{await store.saveCfg({nombres:[n0,n1],splitDef:+$("sPct").value/100});toast("Ajustes guardados");$("settings").open=false}catch(e){writeErr(e)}
+};
+$("setupGo").onclick=async()=>{
+  const n0=$("n0").value.trim(),n1=$("n1").value.trim();if(!n0||!n1){toast("Completá los dos nombres");return}
+  try{await store.saveCfg({nombres:[n0,n1],splitDef:.5});LS.set("cc_me",0);me=0}catch(e){writeErr(e)}
+};
+
+/* ---------- datos entrantes ---------- */
+let cfgLoaded=false, booted=false;
+function onCfg(c){
+  cfgLoaded=true; cfg=c&&Array.isArray(c.nombres)?c:null;
+  $("setup").hidden=!!cfg; $("app").hidden=!cfg;
+  if(cfg){ if(!booted){booted=true;resetForm()} else renderForm(); fillSettings(); renderWho(); renderBalance(); renderMonth(); }
+}
+function onMovs(list){movs=list.filter(m=>typeof m.monto==="number");if(cfg){renderBalance();renderMonth()}}
+
+const randCode=()=>{const c="abcdefghjkmnpqrstuvwxyz23456789";let r="";const a=new Uint32Array(16);crypto.getRandomValues(a);a.forEach(x=>r+=c[x%c.length]);return r.match(/.{4}/g).join("-")};
+$("codeGen").onclick=()=>{$("codeIn").value=randCode()};
+$("codeGo").onclick=()=>{const c=$("codeIn").value.trim().toLowerCase();if(!/^[a-z0-9-]{12,}$/.test(c)){toast("El código tiene que tener al menos 12 letras o números");return}LS.set("cc_code",c);location.reload()};
+$("codeCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("codeShow").value);toast("Código copiado")}catch(e){$("codeShow").select()}};
+$("codeOut").onclick=()=>{LS.set("cc_code","");location.reload()};
+
+(function start(){
+  if(!useFB){ $("offline").hidden=false; onCfg(local.cfg); onMovs(Object.values(local.movs)); return }
+  const code=LS.get("cc_code","");
+  if(!code){ $("codeCard").hidden=false; return }
+  $("codeInfo").hidden=false; $("codeShow").value=code;
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const fs=firebase.firestore();
+  fs.enablePersistence().catch(()=>{}); // funciona sin señal y sincroniza después
+  root=fs.collection("parejas").doc(code);
+  const err=()=>toast("No se pudo conectar con Firebase. Revisá la configuración.");
+  root.collection("config").doc("main").onSnapshot(s=>onCfg(s.exists?s.data():null),err);
+  root.collection("movs").onSnapshot(s=>onMovs(s.docs.map(d=>({...d.data(),id:d.id}))),err);
+})();
+</script>
+</body>
+</html>
